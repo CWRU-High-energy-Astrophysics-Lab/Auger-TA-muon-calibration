@@ -17,6 +17,7 @@ import subprocess as sp
 import time
 import sys
 import scipy.signal as spysig
+import glob
 
 """Small Python3 script that parses the master T3.out list. The file contains
 all the relevant T3 data: Event ID, GPS time, Trigger type, and FADC traces for the
@@ -162,6 +163,7 @@ def save_mon(bytes,si):
             si += 2*20
             plt.step(pmt_base[:,j-1],pmt_base[:,j],where='pre',label=tmp_labels[j])
         plt.xlabel('FADC channels')
+        plt.minorticks_on()
         plt.ylabel('Counts')
         plt.title('Baseline histograms')
         plt.legend()
@@ -181,11 +183,13 @@ def save_mon(bytes,si):
             lab = tmp_labels[j]
             plt.step(mon_peak[:,j-1],mon_peak[:,j],where='pre',label=lab)
         plt.xlabel('FADC channels')
+        plt.minorticks_on()
         plt.ylabel('Counts')
         plt.title('Pulse height histograms')
         plt.legend()
         plt.savefig('mon_hist_pulse_height.png')
         plt.close('all')
+        plt.minorticks_on()
         np.savetxt('mon_hist_pulse_height.txt',mon_peak,fmt="%i")
 # -------------CHARGE HISTOGRAMS-------------
         mon_charge = np.zeros((600,8),dtype=int)
@@ -203,10 +207,12 @@ def save_mon(bytes,si):
                 plt.step(mon_charge[:,j-1],mon_charge[:,j],where='pre',label=lab)
         plt.xlabel('FADC channels')
         plt.ylabel('Counts')
+
         plt.title('Charge histograms')
         plt.legend()
         plt.savefig('mon_hist_charge.png')
         plt.close('all')
+        plt.minorticks_on()
         np.savetxt('mon_hist_charge.txt',mon_charge,fmt="%i")
         plt.step(mon_charge[:,6],mon_charge[:,7],where='pre',label=tmp_labels[-1])
         plt.xlabel('FADC channels')
@@ -215,6 +221,7 @@ def save_mon(bytes,si):
         plt.legend()
         plt.savefig('mon_hist_charge_sum.png')
         plt.close('all')
+        plt.minorticks_on()
 # -------------SHAPE HISTOGRAMS-------------
         mon_shape = np.zeros((20,4),dtype=int)
         mon_shape[:,0] = np.arange(0,500,25)
@@ -229,6 +236,7 @@ def save_mon(bytes,si):
         plt.legend()
         plt.savefig('mon_hist_pmt_shape.png')
         plt.close('all')
+        plt.minorticks_on()
         np.savetxt('mon_hist_pmt_shape.txt',mon_shape,fmt="%i")
     elif mon_size == 0:
         return 0
@@ -399,6 +407,7 @@ def find_vem(p):
     return q_peak,ped_peak
 
 def plot_vem():
+    plt.minorticks_on()
     fig = plt.figure(figsize=(16,9))
     for p in range(3):
         xax,yax = np.loadtxt("mon_hist_charge.txt",usecols=(p*2,2*p+1),dtype=int,unpack=True)
@@ -454,6 +463,7 @@ def make_plots(evt_num,gps):
                 continue
     fadc_hist = np.loadtxt('FADC_trace',dtype=int)
     xaxis = np.arange(0,768)
+    plt.minorticks_on()
     plt.figure(figsize=(19,8))
     for i in range(3):
         plt.subplot(1,3,i+1)
@@ -464,6 +474,7 @@ def make_plots(evt_num,gps):
     plt.tight_layout()
     plt.savefig('dynode_adc.png')
     plt.close()
+    plt.minorticks_on()
     plt.figure(figsize=(19,8))
     for i in range(3):
         plt.subplot(1,3,i+1)
@@ -474,6 +485,7 @@ def make_plots(evt_num,gps):
     plt.tight_layout()
     plt.savefig('anode_adc.png')
     plt.close()
+    plt.minorticks_on()
 # Make Signal plot
     sga = [0.]*3
     sgd = [0.]*3
@@ -535,6 +547,7 @@ def make_plots(evt_num,gps):
     plt.tight_layout()
     plt.savefig('%i_signal.png' %evt_num)
     plt.close('all')
+    plt.minorticks_on()
 #Put isolated signal waveforms into numpy array
 #Format:
 #A1_AOP D1_AOP A2_AOP D2_AOP A3_AOP D3_AOP
@@ -595,32 +608,34 @@ print("Reading T3 event file ...")
 yr = int(fdate[:4])
 mo = int(fdate[4:6])
 dy = int(fdate[6:])
+startingpath=os.getcwd()
+n=len(sys.argv)
+if n < 2:
+    print("Use as: python3 nmpc.py [data folder]")
 
-os.chdir('/media/hea/rootfs/home/que/Downloads/T3_for_Que')
+path= sys.argv[1]
+os.chdir(path)
+
 fname = "%i_%02d_%02d" %(yr,mo,dy)
-'''sp.call(['cp','/home/augta/data/south/t3/%s.T3.gz' %fname,'.'])
+files=glob.glob("*.T3")
+for file in files[1::]:
+    with open(file,'r') as t3file:
+        copy = False
+        for line in t3file:
+            if line.strip() == "Event ...":
+                copy = True
+                data_str = ''
+                num_evts += 1
+            elif line.strip() == "----------":
+                copy = False
+    #Avoid clipped data streams. Compressed event should be more than 10kB
 
-sp.call(['gunzip',"%s.T3.gz" %fname])'''
-
-'''filename = "/media/hea/rootfs/home/que/Downloads/T3_for_Que/t3/2023_04_07 after reboot.T3" %fname'''
-
-with open('/media/hea/rootfs/home/que/Downloads/T3_for_Que/t3/2016_08_11.T3','r') as t3file:
-    copy = False
-    for line in t3file:
-        if line.strip() == "Event ...":
-            copy = True
-            data_str = ''
-            num_evts += 1
-        elif line.strip() == "----------":
-            copy = False
-#Avoid clipped data streams. Compressed event should be more than 10kB
-            '''if len(data_str)>9000:'''
-            t3list.append(data_str)
-        elif copy:
-            data_str += line.strip().replace(' ','')
+                t3list.append(data_str)
+            elif copy:
+                data_str += line.strip().replace(' ','')
 
 time.sleep(0.5)
-#print("[ OK ]")
+print("[ OK ]")
 #print("Found {} events".format(num_evts))
 
 evt_count = 1
@@ -633,6 +648,7 @@ for t3 in t3list:
     dec_t3 = bz2.decompress(packed)
     # Now that we have uncompressed message let's get some information
     # The PowerPC hardware uses big endian format
+    print(dec_t3[:4])
     gps_YMDHMnS = struct.unpack('>I', dec_t3[:4])[0] #First 4 bytes are GPS sec
     gps_TICK = struct.unpack('>I', dec_t3[4:8])[0] #Next 4 are GPS clock cycles
     try:
@@ -646,7 +662,7 @@ for t3 in t3list:
     f=open('T3_{}.bin'.format(evt_id), 'bw')
     f.write(dec_t3)
     f.close()
-    sp.call(["/media/hea/rootfs/home/que/Downloads/T3_for_Que/a.out", "T3_{}.bin".format(evt_id)])
+    sp.call([startingpath+"/a.out", "T3_{}.bin".format(evt_id)])
     monstart = save_calib(dec_t3)
     gpsstart = save_mon(dec_t3,monstart)
     save_gps(dec_t3,gpsstart)
@@ -718,3 +734,5 @@ for i in range(N):
     with open('/home/augta/web_monitor/south_local_signal.txt','a') as f:
         f.write(s+'\n')
 '''
+
+#%%
