@@ -1,8 +1,0 @@
-Current100 99999352
-Next100 99999352
-Current40 39999622
-Next40 39999622
-PreviousST 43
-CurrentST 1
-NextST 4294967255
-Offset 0

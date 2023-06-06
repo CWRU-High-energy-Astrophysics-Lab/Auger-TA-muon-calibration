@@ -648,9 +648,12 @@ for t3 in t3list:
     dec_t3 = bz2.decompress(packed)
     # Now that we have uncompressed message let's get some information
     # The PowerPC hardware uses big endian format
-    print(dec_t3[:4])
-    gps_YMDHMnS = struct.unpack('>I', dec_t3[:4])[0] #First 4 bytes are GPS sec
-    gps_TICK = struct.unpack('>I', dec_t3[4:8])[0] #Next 4 are GPS clock cycles
+    try:
+        gps_YMDHMnS = struct.unpack('>I', dec_t3[:4])[0] #First 4 bytes are GPS sec
+        gps_TICK = struct.unpack('>I', dec_t3[4:8])[0] #Next 4 are GPS clock cycles
+    except struct.error as e:
+        print("Error gps timestamp for event count %i, event id: %i " %(evt_count, evt_id))
+        continue
     try:
         os.mkdir("{0}_{1}".format(evt_id,gps_YMDHMnS))
     except OSError as e:

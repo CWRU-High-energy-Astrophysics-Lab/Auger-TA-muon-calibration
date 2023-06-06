@@ -1,0 +1,8 @@
+Current100 99999331
+Next100 99999332
+Current40 39999581
+Next40 39999581
+PreviousST 16
+CurrentST 12
+NextST 9
+Offset 0
