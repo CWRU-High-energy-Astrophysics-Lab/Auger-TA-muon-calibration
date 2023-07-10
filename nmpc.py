@@ -618,12 +618,17 @@ os.chdir(path)
 
 fname = "%i_%02d_%02d" %(yr,mo,dy)
 files=glob.glob("*.T3")
-for file in files[1::]:
+print(files)
+for file in files[0::]:
+    
     with open(file,'r') as t3file:
-        copy = False
-        for line in t3file:
+    	print(f"Opening")
+    	copy = False
+    	for line in t3file:
+            
             if line.strip() == "Event ...":
                 copy = True
+                print("Found Event")
                 data_str = ''
                 num_evts += 1
             elif line.strip() == "----------":
